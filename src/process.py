@@ -1,6 +1,38 @@
 import cv2 as cv
 import argparse
 
+    # https://www.cs.ubc.ca/~lowe/papers/brown05.pdf
+        # 3D reconstruction
+
+    # Should we use SIFT?
+        # ORB is faster but SIFT could be more accurate for images where the object in question isn't in the main view
+
+    # 1. Narrow down search space based upon where the keypoints are most frequently detected?
+        # a. Create kernels over these spaces and rerun
+
+    # Grayscale?
+
+    # Tasks
+        # 1. Feature extraction from the video
+            # Frame by frame feature consistency?
+            # Lower n features?
+
+        # 2. Feature extraction from the photo
+            # Higher nfeatures 
+
+        # 3. Feature Matching
+            # KNN, ratio testing, RANSAC
+
+        # 4. Bounding box around object
+
+    # Optional for update
+        # SIFT vs ORB
+        # YOLO to reduce search space
+        # Clustering for background noise removal
+        # YOLO for background noise removal
+        # General object detection
+            # YOLO training
+
 class Detector():
 
     def __init__(self, video_path, img_path):
@@ -69,12 +101,3 @@ if __name__ == "__main__":
 
     det = Detector(args.input_video, args.detect_image)
     det.run()
-
-    # https://www.cs.ubc.ca/~lowe/papers/brown05.pdf
-        # 3D reconstruction
-
-    # Should we use SIFT?
-        # ORB is faster but SIFT could be more accurate for images where the object in question isn't in the main view
-
-    # 1. Narrow down search space based upon where the keypoints are most frequently detected?
-        # a. Create kernels over these spaces and rerun
