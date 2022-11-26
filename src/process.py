@@ -54,9 +54,9 @@ if __name__ == "__main__":
                         good.append(m)
 
                 draw_params = dict(matchColor = (0,255,0), # draw matches in green color
-                            singlePointColor = None,
-                            #    matchesMask = matchesMask, # draw only inliers
-                            flags = 2)
+                                singlePointColor = None,
+                                #    matchesMask = matchesMask, # draw only inliers
+                                flags = 2)
 
                 im3 = cv.drawMatches(feature0.frame, feature0.keypoints, feature1.frame, feature1.keypoints, good, None, **draw_params)
                 cv.imshow("tracked", im3)
