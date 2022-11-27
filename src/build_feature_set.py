@@ -1,13 +1,24 @@
+from email.policy import default
+import json
 import cv2 as cv
 import numpy as np
 
 import argparse
 import feature
 
+def dump_features(features, file : str) -> None:
+    with open(file, 'w') as f:
+        f.write(json.dumps(features, cls=feature.FeatureJSONEncoder))
+
+def load_features(file : str) -> list[feature.Feature]:
+    with open(file, 'r') as f:
+        return json.loads(f.read(), cls=feature.FeatureJSONDecoder)
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--input', required=True)
     parser.add_argument('--tracker_output', default="output.mov")
+    parser.add_argument('--feature_file', required=False, default='features.json')
     parser.add_argument('--frame_skip', default=4, type=int)
     args = parser.parse_args()
 
@@ -36,7 +47,7 @@ if __name__ == "__main__":
 
             kp, desc = orb.compute(frame, kp)
 
-            feature_collection.append(feature.Feature(frame, kp, desc))
+            feature_collection.append(feature.Feature(kp, desc, frame))
 
             img2 = cv.drawKeypoints(frame, kp, None, color=(0, 255, 0), flags=cv.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
 
@@ -64,3 +75,5 @@ if __name__ == "__main__":
                 break
 
         frame_id += 1
+
+    dump_features(feature_collection, args.feature_file)
