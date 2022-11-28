@@ -8,8 +8,9 @@
             "name": "Python: Launch Feature Builder",
             "type": "python",
             "request": "launch",
-            "program": "${workspaceFolder}/src/process.py",
-            "args": ["--input", "data/IMG_1842.MOV"],
+            "program": "${workspaceFolder}/src/build_feature_set.py",
+            "args": ["--input", "data/IMG_1842.MOV",
+                    "--feature_file", "data/output.jpg"],
             "console": "integratedTerminal",
             "justMyCode": true
         }
