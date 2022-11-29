@@ -3,6 +3,7 @@ import json
 import cv2 as cv
 import numpy as np
 from typing import Union
+from operator import itemgetter
 
 import argparse
 import feature
@@ -24,12 +25,13 @@ if __name__ == "__main__":
     parser.add_argument('--tracker_output', default="output.mov")
     parser.add_argument('--feature_file', required=False, default='features.json')
     parser.add_argument('--frame_skip', default=4, type=int)
-    parser.add_argument('--feature_frames', default=4, type=int)
+    parser.add_argument('--feature_frames', default=1, type=int)
     args = parser.parse_args()
 
     cap = cv.VideoCapture(args.input)
 
     feature_collection = []
+    feature_matches = []
 
     cv.namedWindow('tracked', flags=cv.WINDOW_NORMAL | cv.WINDOW_KEEPRATIO)
     cv.resizeWindow('tracked', 500, 500)
@@ -41,20 +43,21 @@ if __name__ == "__main__":
     flann_matcher = cv.FlannBasedMatcher(flann_params)
 
     frame_id = 0
-    while cap.isOpened():
+    stop = False
+    while cap.isOpened() and not stop:
         if frame_id % args.frame_skip == 0:
             ret, frame = cap.read()
             if not ret:
                 break
 
             orb = cv.ORB_create()
-            kp = orb.detect(frame, None)
+            new_fr_kp = orb.detect(frame, None)
 
-            kp, desc = orb.compute(frame, kp)
+            new_fr_kp, new_fr_desc = orb.compute(frame, new_fr_kp)
 
-            new_feature_fr = feature.Feature(kp, desc, frame)
+            new_feature_fr = feature.Feature(new_fr_kp, new_fr_desc, frame)
 
-            img2 = cv.drawKeypoints(frame, kp, None, color=(0, 255, 0), flags=cv.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
+            img2 = cv.drawKeypoints(frame, new_fr_kp, None, color=(0, 255, 0), flags=cv.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
 
             # cv.imshow('tracked', img2)
             
@@ -86,14 +89,33 @@ if __name__ == "__main__":
                                     flags = 2)
 
                     im3 = cv.drawMatches(new_feature_fr.frame, new_feature_fr.keypoints, fr.frame, fr.keypoints, good, None, **draw_params)
+
+
                     cv.imshow("tracked", im3)
                     if cv.waitKey(100) == 27: # escape
-                        exit(-1)
-                if True: # TODO evaluate frame quality
-                    feature_collection.append(new_feature_fr)
+                        stop = True
+                        break
+                # new_feature_fr.keypoints = itemgetter(*[x.queryIdx for x in good])(new_feature_fr.keypoints)
+                # new_feature_fr.descriptors = itemgetter(*[x.queryIdx for x in good])(new_feature_fr.descriptors)
+                feature_collection.append(new_feature_fr)
+                feature_matches.append(np.stack([np.array([m.queryIdx, m.trainIdx]) for m in good], axis=0))
             else:
                 feature_collection.append(new_feature_fr)
 
         frame_id += 1
+
+    # print(feature_matches)
+
+    # for i in range(len(feature_matches)-1):
+    #     matches01 = feature_matches[i]
+    #     matches12 = feature_matches[i+1]
+    #     feature0 = feature_collection[i]
+    #     feature1 = feature_collection[i+1]
+    #     feature2 = feature_collection[i+2]
+    #     for m in matches01:
+    #         if m.queryIdx in matches12:
+    #             pass
+
+    # print(feature_matches)
 
     dump_features(feature_collection, args.feature_file)

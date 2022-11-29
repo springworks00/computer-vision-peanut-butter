@@ -7,6 +7,10 @@ class Feature:
         self.keypoints = kp
         self.descriptors = desc
 
+class Track:
+    def __init__(self) -> None:
+        self.descriptors = []
+
 class FeatureJSONEncoder(JSONEncoder):
     def default(self, obj : Feature):
         return {
