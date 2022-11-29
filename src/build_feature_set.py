@@ -2,6 +2,7 @@ from email.policy import default
 import json
 import cv2 as cv
 import numpy as np
+from typing import Union
 
 import argparse
 import feature
@@ -13,6 +14,9 @@ def dump_features(features, file : str) -> None:
 def load_features(file : str) -> list[feature.Feature]:
     with open(file, 'r') as f:
         return json.loads(f.read(), cls=feature.FeatureJSONDecoder)
+
+def ransac(frame0 : feature.Feature, frame1 : feature.Feature) -> Union[bool, cv.Mat, list[bool]]:
+    pass
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -57,7 +61,7 @@ if __name__ == "__main__":
             if len(feature_collection) > args.feature_frames:
                 for i, fr in enumerate(feature_collection[-args.feature_frames:]):
                     # feature1 : feature.Feature = feature_collection[-1]
-                    matches = flann_matcher.knnMatch(np.float32(new_feature_fr.descriptors), np.float32(fr.descriptors), 2)
+                    matches = flann_matcher.knnMatch(np.float32(new_feature_fr.descriptors), np.float32(fr.descriptors), k=2)
 
                     # store all the good matches as per Lowe's ratio test.
                     good = []
@@ -65,9 +69,20 @@ if __name__ == "__main__":
                         if m.distance < 0.7*n.distance:
                             good.append(m)
 
+                    if len(good) < 4:
+                        continue
+
+                    n_fr_pts, fr_pts = map(list, zip(*[(np.array(new_feature_fr.keypoints[match.queryIdx].pt)[np.newaxis, :], np.array(fr.keypoints[match.trainIdx].pt)[np.newaxis, :]) for match in good]))
+                    n_fr_pts = np.stack(n_fr_pts, axis=0)
+                    fr_pts = np.stack(fr_pts, axis=0)
+
+                    H, mask = cv.findHomography(n_fr_pts, fr_pts, method=cv.RANSAC, ransacReprojThreshold=5.0)
+
+                    mask = mask.ravel().tolist()
+
                     draw_params = dict(matchColor = (0,255,0), # draw matches in green color
                                     singlePointColor = None,
-                                    #    matchesMask = matchesMask, # draw only inliers
+                                    matchesMask = mask, # draw only inliers
                                     flags = 2)
 
                     im3 = cv.drawMatches(new_feature_fr.frame, new_feature_fr.keypoints, fr.frame, fr.keypoints, good, None, **draw_params)
