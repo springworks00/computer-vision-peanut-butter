@@ -66,8 +66,7 @@ if __name__ == "__main__":
 
             new_feature_fr = feature.Feature(new_fr_kp, new_fr_desc, frame)
 
-            img2 = cv.drawKeypoints(frame, new_fr_kp, None, color=(0, 255, 0), flags=cv.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
-
+            # img2 = cv.drawKeypoints(frame, new_fr_kp, None, color=(0, 255, 0), flags=cv.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
             # cv.imshow('tracked', img2)
             
             if len(feature_collection) > args.feature_frames:
