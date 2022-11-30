@@ -33,7 +33,7 @@ if __name__ == "__main__":
     parser.add_argument('--tracker_output', default="output.mov")
     parser.add_argument('--feature_file', required=False, default='features.json')
     parser.add_argument('--frame_skip', default=30, type=int)
-    parser.add_argument('--feature_frames', default=10, type=int)
+    parser.add_argument('--feature_frames', default=4, type=int)
     args = parser.parse_args()
 
     cap = cv.VideoCapture(args.input)
@@ -88,9 +88,9 @@ if __name__ == "__main__":
                     for match in good:
                         votes[match.queryIdx] += 1
 
-                    n_fr_pts, fr_pts = map(list, zip(*[(np.array(new_feature_fr.keypoints[match.queryIdx].pt)[np.newaxis, :], np.array(fr.keypoints[match.trainIdx].pt)[np.newaxis, :]) for match in good]))
-                    n_fr_pts = np.stack(n_fr_pts, axis=0)
-                    fr_pts = np.stack(fr_pts, axis=0)
+                    # n_fr_pts, fr_pts = map(list, zip(*[(np.array(new_feature_fr.keypoints[match.queryIdx].pt)[np.newaxis, :], np.array(fr.keypoints[match.trainIdx].pt)[np.newaxis, :]) for match in good]))
+                    # n_fr_pts = np.stack(n_fr_pts, axis=0)
+                    # fr_pts = np.stack(fr_pts, axis=0)
 
                     # H, mask = cv.findHomography(n_fr_pts, fr_pts, method=cv.RANSAC, ransacReprojThreshold=5.0)
                     # mask = mask.ravel().tolist()
@@ -103,10 +103,10 @@ if __name__ == "__main__":
                     im3 = cv.drawMatches(new_feature_fr.frame, new_feature_fr.keypoints, fr.frame, fr.keypoints, good, None, **draw_params)
 
                     cv.imshow("tracked", im3)
-                    if cv.waitKey(100) == 27: # escape
+                    if cv.waitKey(10) == 27: # escape
                         stop = True
                         break
-                print(votes)
+                
                 # new_feature_fr.keypoints = itemgetter(*[x.queryIdx for x in good])(new_feature_fr.keypoints)
                 # new_feature_fr.descriptors = itemgetter(*[x.queryIdx for x in good])(new_feature_fr.descriptors)
                 feature_collection.append(new_feature_fr)
@@ -131,11 +131,23 @@ if __name__ == "__main__":
 
     # print(feature_matches)
 
+    # drop the first args.feature_frames since they were not involved in feature voting
+    feature_collection = feature_collection[args.feature_frames+1:]
+
+    total_features = 0
+    final_features = 0
+    for f in feature_collection:
+        total_features += len(f.descriptors)
+
+    print("Reducing feature count")
+    assert(len(feature_collection) == len(feature_votes))
     for f, vote in zip(feature_collection, feature_votes):
-        initial = len(f.descriptors)
         f.descriptors = f.descriptors[vote > 0]
-        print(f.keypoints)
-        f.keypoints = f.keypoints[vote > 0]
-        print(len(f.descriptors) / initial)
+        f.keypoints = [x for x, y, in zip(f.keypoints, vote) if y > 0]
+
+    for f in feature_collection:
+        final_features += len(f.descriptors)
+
+    print("%i features down from %i" % (final_features, total_features))
 
     dump_features(feature_collection, args.feature_file)
