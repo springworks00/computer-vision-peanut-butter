@@ -28,18 +28,19 @@ def theta_from_R(R):
     return math.atan2(R[1,0], R[0,0])
 
 class FeatureExtractor:
-    def __init__(self, feature_frames : int) -> None:
-        self.orb = cv.ORB_create()
+    def __init__(self, feature_frames : int, matcher, feature_builder) -> None:
+        self.feature_builder = feature_builder
 
         self.feature_collection = []
         self.feature_votes = []
 
         self.feature_frames = feature_frames
+        self.matcher = matcher
 
 
     def add_feature_frame(self, frame : cv.UMat) -> None:
-        new_fr_kp = self.orb.detect(frame, None)
-        new_fr_kp, new_fr_desc = self.orb.compute(frame, new_fr_kp)
+        new_fr_kp = self.feature_builder.detect(frame, None)
+        new_fr_kp, new_fr_desc = self.feature_builder.compute(frame, new_fr_kp)
 
         self.feature_collection.append(feature.Feature(new_fr_kp, new_fr_desc, frame))
 
@@ -53,7 +54,7 @@ class FeatureExtractor:
                     continue
                 fr = self.feature_collection[j]
                 # feature1 : feature.Feature = feature_collection[-1]
-                matches = flann_matcher.knnMatch(np.float32(feature_fr.descriptors), np.float32(fr.descriptors), k=2)
+                matches = self.matcher.knnMatch(np.float32(feature_fr.descriptors), np.float32(fr.descriptors), k=2)
 
                 # store all the good matches as per Lowe's ratio test.
                 good = []
@@ -116,17 +117,19 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     cap = cv.VideoCapture(args.input)
-    
-    fextractor = FeatureExtractor(args.feature_frames)
-
-    cv.namedWindow('tracked', flags=cv.WINDOW_NORMAL | cv.WINDOW_KEEPRATIO)
-    cv.resizeWindow('tracked', 500, 500)
 
     FLANN_INDEX_KDTREE = 0
     flann_params = dict(algorithm = FLANN_INDEX_KDTREE,
                         trees = 4)
 
     flann_matcher = cv.FlannBasedMatcher(flann_params)
+
+    sift = cv.SIFT_create()
+
+    fextractor = FeatureExtractor(args.feature_frames, cv.BFMatcher_create(), sift)
+
+    cv.namedWindow('tracked', flags=cv.WINDOW_NORMAL | cv.WINDOW_KEEPRATIO)
+    cv.resizeWindow('tracked', 500, 500)
 
     frame_id = 0
     stop = False
