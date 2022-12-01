@@ -11,7 +11,8 @@
             "program": "${workspaceFolder}/src/build_feature_set.py",
             "args": ["--input", "data/remote_video/remote_video.MOV",
                     "--feature_file", "data/remote_video/output.json",
-                    "--frame_skip", "15"],
+                    "--frame_skip", "15",
+                    "--feature_frames", "5"],
             "console": "integratedTerminal",
             "justMyCode": true
         }
