@@ -144,14 +144,15 @@ if __name__ == '__main__':
         print('std: %s centroid: %s avg_vel: %s' % (std, centroid, avg_vel))
 
         # save frame before we draw all over it
+        img_ann_path = ''
         if not args.output_images is None:
             img_filename = args.prefix + '%i.png' % frame_id
             img_path = os.path.join(args.output_images, img_filename)
             img_ann_path = os.path.join(annotations_relpath, img_filename)
-            h,w = frame.shape[:2]
-            annotations.append((img_ann_path, clip_bb(bb, (w,h))))
             print('Saving frame %s (%s)' % (img_path, img_ann_path))
             cv.imwrite(img_path, frame)
+        h,w = frame.shape[:2]
+        annotations.append((img_ann_path, clip_bb(bb, (w,h))))
 
         # draw the tracks
         for i, (new, old) in enumerate(zip(good_new, good_old)):
