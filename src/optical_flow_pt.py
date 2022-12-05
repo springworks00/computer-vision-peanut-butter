@@ -76,7 +76,8 @@ if __name__ == '__main__':
     lk_params = dict( winSize  = (15, 15),
                     maxLevel = 2,
                     criteria = (cv.TERM_CRITERIA_EPS | cv.TERM_CRITERIA_COUNT, 10, 0.03),
-                    minEigThreshold=2e-3)
+                    minEigThreshold=1e-3
+                    )
     # Create some random colors
     color = np.random.randint(0, 255, (N_TRACKED_CORNERS, 3))
     # Take first frame and find corners in it
@@ -95,7 +96,9 @@ if __name__ == '__main__':
         if not ret:
             print('No frames grabbed!')
             break
+        frame_gray = cv.medianBlur(frame, 5)
         frame_gray = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
+
 
         # calculate centroid
         centroid = np.mean(p0, axis=0)[0]
@@ -170,6 +173,9 @@ if __name__ == '__main__':
         k = cv.waitKey(30) & 0xff
         if k == 27:
             break
+        if k == ord('s'):
+            print('Saving frame')
+            cv.imwrite('tracker_output.png', frame)
         # Now update the previous frame and previous points
         old_gray = frame_gray.copy()
         p0 = good_new.reshape(-1, 1, 2)
