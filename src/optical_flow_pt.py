@@ -62,6 +62,9 @@ if __name__ == '__main__':
     cv.namedWindow('frame', flags=cv.WINDOW_NORMAL | cv.WINDOW_KEEPRATIO)
     cv.resizeWindow('frame', 500, 500)
 
+    # cv.namedWindow('frame2', flags=cv.WINDOW_NORMAL | cv.WINDOW_KEEPRATIO)
+    # cv.resizeWindow('frame2', 500, 500)
+
     matcher = cv.BFMatcher_create()
 
     N_TRACKED_CORNERS = 50
@@ -82,7 +85,8 @@ if __name__ == '__main__':
     color = np.random.randint(0, 255, (N_TRACKED_CORNERS, 3))
     # Take first frame and find corners in it
     ret, old_frame = cap.read()
-    old_gray = cv.cvtColor(old_frame, cv.COLOR_BGR2GRAY)
+    old_gray = cv.medianBlur(old_frame, 5)
+    old_gray = cv.cvtColor(old_gray, cv.COLOR_BGR2GRAY)
     p0 = cv.goodFeaturesToTrack(old_gray, mask = None, **feature_params)
     bb = np.array(cv.boundingRect(p0))
 
@@ -97,7 +101,7 @@ if __name__ == '__main__':
             print('No frames grabbed!')
             break
         frame_gray = cv.medianBlur(frame, 5)
-        frame_gray = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
+        frame_gray = cv.cvtColor(frame_gray, cv.COLOR_BGR2GRAY)
 
 
         # calculate centroid
@@ -122,7 +126,7 @@ if __name__ == '__main__':
                 good = np.stack(good, axis=0)
                 p0 = np.concatenate([p0, good], axis=0)
         
-        # calculate optical flow
+        # calculate optical flow of tracked points
         p1, st, err = cv.calcOpticalFlowPyrLK(old_gray, frame_gray, p0, None, **lk_params)
         # Select good points
         if p1 is not None:
@@ -147,6 +151,24 @@ if __name__ == '__main__':
 
         print('std: %s centroid: %s avg_vel: %s' % (std, centroid, avg_vel))
 
+        h,w = frame.shape[:2]
+        bb_cl = clip_bb(bb, (w,h))
+
+        # flow = cv.calcOpticalFlowFarneback(old_gray, frame_gray, None, 0.5, 3, 15, 3, 5, 1.2, 0)
+
+        # flow = flow[bb_cl[1]:bb_cl[1]+bb_cl[3], bb_cl[0]:bb_cl[0]+bb_cl[2]]
+        # # flow = flow - np.mean(flow, axis=(0,1))
+
+        # hsv = np.zeros((*flow.shape[:2], 3), dtype=np.uint8)
+        # print(hsv.shape)
+        # hsv[..., 1] = 255
+        # mag, ang = cv.cartToPolar(flow[..., 0], flow[..., 1])
+        # if not ang is None:
+        #     hsv[..., 0] = ang*180/np.pi/2
+        #     hsv[..., 2] = cv.normalize(mag, None, 0, 255, cv.NORM_MINMAX)
+        #     bgr = cv.cvtColor(hsv, cv.COLOR_HSV2BGR)
+        #     cv.imshow('frame2', bgr)
+
         # save frame before we draw all over it
         img_ann_path = ''
         if not args.output_images is None:
@@ -155,8 +177,7 @@ if __name__ == '__main__':
             img_ann_path = os.path.join(annotations_relpath, img_filename)
             print('Saving frame %s (%s)' % (img_path, img_ann_path))
             cv.imwrite(img_path, frame)
-        h,w = frame.shape[:2]
-        annotations.append((img_ann_path, clip_bb(bb, (w,h))))
+        annotations.append((img_ann_path, bb_cl))
 
         # draw the tracks
         for i, (new, old) in enumerate(zip(good_new, good_old)):
