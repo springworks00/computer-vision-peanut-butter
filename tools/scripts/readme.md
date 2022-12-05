@@ -28,6 +28,8 @@ expected directory layout for this example:
 
 `python src/optical_flow_pt.py data/trainingimg/multimeter/IMG_1842.MOV --output_images data/trainingimg/multimeter/positives/ --output_annotations data/trainingimg/multimeter/annotations.txt`
 
+Note: use the *--append* flag when you want to add another set of video images to the dataset. This will append the new filenames to the end of *annotations.txt* rather than overwriting it.
+
 ### 2) generate vec file for positives
 
 `cd data/trainingimg/multimeter`
