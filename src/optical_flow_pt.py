@@ -35,7 +35,7 @@ if __name__ == '__main__':
                                                 The example file can be downloaded from: \
                                                 https://www.bogotobogo.com/python/OpenCV_Python/images/mean_shift_tracking/slow_traffic_small.mp4')
     parser.add_argument('image', type=str, help='path to image file')
-    parser.add_argument('--centroid_f',type=float, help='blending weight for how quickly the bounding box should adjust to new centroid of features', default=0.5)
+    parser.add_argument('--centroid_f',type=float, help='blending weight for how quickly the bounding box should adjust to new centroid of features', default=0.3)
     parser.add_argument('--tgtbb_f', type=float, default=0.1)
     parser.add_argument('--prefix', default='')
     parser.add_argument('--output_images', help='optional directory to output image files from video.\
@@ -106,6 +106,7 @@ if __name__ == '__main__':
 
         # calculate centroid
         centroid = np.mean(p0, axis=0)[0]
+        # centroid = np.median(p0, axis=0)[0]
 
         std = np.std(p0, axis=0)[0]
 
@@ -187,7 +188,8 @@ if __name__ == '__main__':
             frame = cv.circle(frame, (int(a), int(b)), 5, color[i%len(color)].tolist(), -1)
         
         rect = annotations[-1][1]
-        frame = cv.circle(frame, (int(c_xy[0]), int(c_xy[1])), 15, (0, 255, 0), -1)
+        frame = cv.circle(frame, (int(centroid[0]), int(centroid[1])), 15, (0, 0, 255), -1)
+        frame = cv.circle(frame, (int(c_xy[0]), int(c_xy[1])), 15, (255, 12, 0), -1)
         frame = cv.rectangle(frame, np.int32((rect[0], rect[1])), np.int32((rect[0] + rect[2], rect[1] + rect[3])), (255, 0, 0), thickness=2)
         img = cv.add(frame, mask)
         cv.imshow('frame', img)
