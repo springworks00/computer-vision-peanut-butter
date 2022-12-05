@@ -8,16 +8,13 @@ import math
 import argparse
 import feature
 
-def dump_features(features, file : str) -> None:
+def dump_features(features_collection, file : str) -> None:
     with open(file, 'w') as f:
-        f.write(json.dumps(features, cls=feature.FeatureJSONEncoder))
+        f.write(json.dumps(features_collection, cls=feature.FeatureJSONEncoder))
 
 def load_features(file : str) -> list[feature.Feature]:
     with open(file, 'r') as f:
         return json.loads(f.read(), cls=feature.FeatureJSONDecoder)
-
-def ransac(frame0 : feature.Feature, frame1 : feature.Feature) -> tuple[cv.Mat, list[bool]]:
-    pass
 
 def rotation_from_H(H):
     u, _, vh = np.linalg.svd(H[0:2, 0:2])
@@ -26,6 +23,30 @@ def rotation_from_H(H):
 
 def theta_from_R(R):
     return math.atan2(R[1,0], R[0,0])
+
+def estimate_essential(pts1, pts2):
+    pts1 = np.int32(pts1)
+    pts2 = np.int32(pts2)
+
+    F, mask = cv.findFundamentalMat(pts1, pts2, cv.FM_LMEDS)
+
+    if not F is None:
+        # select only inlier points
+        pts1 = pts1[mask.ravel()==1]
+        pts2 = pts2[mask.ravel()==1]
+
+        u, _, vh = np.linalg.svd(F)
+
+        print(F)
+        print("MARK")
+
+        E, mask = cv.findEssentialMat(pts1, pts2)
+
+def make_feature(feature_builder, frame : cv.UMat) -> feature.Feature:
+    new_fr_kp = feature_builder.detect(frame, None)
+    new_fr_kp, new_fr_desc = feature_builder.compute(frame, new_fr_kp)
+
+    return feature.Feature(new_fr_kp, new_fr_desc, frame)
 
 class FeatureExtractor:
     def __init__(self, feature_frames : int, matcher, feature_builder) -> None:
@@ -37,12 +58,8 @@ class FeatureExtractor:
         self.feature_frames = feature_frames
         self.matcher = matcher
 
-
     def add_feature_frame(self, frame : cv.UMat) -> None:
-        new_fr_kp = self.feature_builder.detect(frame, None)
-        new_fr_kp, new_fr_desc = self.feature_builder.compute(frame, new_fr_kp)
-
-        self.feature_collection.append(feature.Feature(new_fr_kp, new_fr_desc, frame))
+        self.feature_collection.append(make_feature(self.feature_builder, frame))
 
     def reduce_features(self):
         for i, feature_fr in enumerate(self.feature_collection):
@@ -68,12 +85,14 @@ class FeatureExtractor:
                 for match in good:
                     votes[match.queryIdx] += 1
 
-                # n_fr_pts, fr_pts = map(list, zip(*[(np.array(new_feature_fr.keypoints[match.queryIdx].pt)[np.newaxis, :], np.array(fr.keypoints[match.trainIdx].pt)[np.newaxis, :]) for match in good]))
-                # n_fr_pts = np.stack(n_fr_pts, axis=0)
-                # fr_pts = np.stack(fr_pts, axis=0)
+                n_fr_pts, fr_pts = map(list, zip(*[(np.array(feature_fr.keypoints[match.queryIdx].pt)[np.newaxis, :], np.array(fr.keypoints[match.trainIdx].pt)[np.newaxis, :]) for match in good]))
+                n_fr_pts = np.stack(n_fr_pts, axis=0)
+                fr_pts = np.stack(fr_pts, axis=0)
 
                 # H, mask = cv.findHomography(n_fr_pts, fr_pts, method=cv.RANSAC, ransacReprojThreshold=5.0)
                 # mask = mask.ravel().tolist()
+
+                
 
                 draw_params = dict(matchColor = (0,255,0), # draw matches in green color
                                 singlePointColor = None,
@@ -112,6 +131,7 @@ if __name__ == "__main__":
     parser.add_argument('--input', required=True)
     parser.add_argument('--tracker_output', default="output.mov")
     parser.add_argument('--feature_file', required=False, default='features.json')
+    parser.add_argument('--feature_input')
     parser.add_argument('--frame_skip', default=30, type=int)
     parser.add_argument('--feature_frames', default=4, type=int)
     args = parser.parse_args()
@@ -142,6 +162,6 @@ if __name__ == "__main__":
 
         frame_id += 1
 
-    fextractor.reduce_features()
+    # fextractor.reduce_features()
 
     dump_features(fextractor.feature_collection, args.feature_file)
