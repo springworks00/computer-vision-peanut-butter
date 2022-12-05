@@ -24,8 +24,8 @@ def clip_bb(bb, size) -> np.array:
         h += over
     return np.array([x,y,w,h])
 
-def save_annotations_file(filename : str, annotations) -> None:
-    with open(filename, 'w') as f:
+def save_annotations_file(filename : str, annotations, store_mode : bool) -> None:
+    with open(filename, 'a' if store_mode else 'w') as f:
         for file, bb in annotations:
             line = '%s %i %i %i %i %i \n' % (file, 1, *bb)
             f.write(line)
@@ -43,6 +43,7 @@ if __name__ == '__main__':
     parser.add_argument('--output_annotations', help='annotations file for training. If supplied, a file with all \
                                                     bounding box (x,y,w,h) coordinates and their corresponding files.\
                                                     --output_images must be provided if this argument is used.')
+    parser.add_argument('--append', action='store_true')
     args = parser.parse_args()
 
     if not args.output_annotations is None:
@@ -125,7 +126,7 @@ if __name__ == '__main__':
             good_new = p1[st==1]
             good_old = p0[st==1]
 
-        vel = good_old - good_new
+        vel = good_new - good_old
         avg_vel = np.mean(vel, axis=0)
 
         # adjust center of bounding box towards feature point cluster
@@ -139,7 +140,7 @@ if __name__ == '__main__':
         # adjust bounding box size towards box enclosing all good points
         bb_target = np.array(cv.boundingRect(good_new))
 
-        bb[2:] = (1-args.tgtbb_f) * bb[2:] + args.tgtbb_f * (1.2 * bb_target[2:])
+        bb[2:] = (1-args.tgtbb_f) * bb[2:] + args.tgtbb_f * (1.1 * bb_target[2:])
 
         print('std: %s centroid: %s avg_vel: %s' % (std, centroid, avg_vel))
 
@@ -176,4 +177,4 @@ if __name__ == '__main__':
     cv.destroyAllWindows()
 
     if not args.output_annotations is None:
-        save_annotations_file(args.output_annotations, annotations=annotations)
+        save_annotations_file(args.output_annotations, annotations=annotations, store_mode=args.append)
