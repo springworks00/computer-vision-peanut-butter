@@ -1,4 +1,6 @@
 import cv2
+import numpy as np
+import sklearn
 
 from sklearn.cluster import KMeans
 from sklearn.metrics import pairwise_distances_argmin_min

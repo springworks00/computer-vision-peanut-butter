@@ -9,9 +9,10 @@
             "type": "python",
             "request": "launch",
             "program": "${workspaceFolder}/src/build_feature_set.py",
-            "args": ["--input", "data/remote_video/remote_video.MOV",
-                    "--feature_file", "data/remote_video/output.json",
-                    "--frame_skip", "15"],
+            "args": ["--input", "data/IMG_1842.MOV",
+                    "--feature_file", "data/output.json",
+                    "--frame_skip", "1",
+                    "--feature_frames", "5"],
             "console": "integratedTerminal",
             "justMyCode": true
         }
