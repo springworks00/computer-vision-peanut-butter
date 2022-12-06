@@ -1,0 +1,136 @@
+Object: data/rgbdVideoFrames/cap/cap_4
+Scenes Present: 12
+Predict: 12 | Overall Perc: 1.0
+No Predict: 0 | Overall Perc: 0.0
+False Positives: 12 | Perc. of Predicted: 1.0 | Overall Perc: 1.0
+-----
+Object: data/rgbdVideoFrames/cereal_box/cereal_box_4
+Scenes Present: 12
+Predict: 12 | Overall Perc: 1.0
+No Predict: 0 | Overall Perc: 0.0
+False Positives: 3 | Perc. of Predicted: 0.25 | Overall Perc: 0.25
+-----
+Object: data/rgbdVideoFrames/soda_can/soda_can_1
+Scenes Present: 15
+Predict: 15 | Overall Perc: 1.0
+No Predict: 0 | Overall Perc: 0.0
+False Positives: 10 | Perc. of Predicted: 0.6666666666666666 | Overall Perc: 0.6666666666666666
+-----
+Object: data/rgbdVideoFrames/bowl/bowl_4
+Scenes Present: 14
+Predict: 14 | Overall Perc: 1.0
+No Predict: 0 | Overall Perc: 0.0
+False Positives: 10 | Perc. of Predicted: 0.7142857142857143 | Overall Perc: 0.7142857142857143
+-----
+Object: data/rgbdVideoFrames/cereal_box/cereal_box_1
+Scenes Present: 18
+Predict: 18 | Overall Perc: 1.0
+No Predict: 0 | Overall Perc: 0.0
+False Positives: 14 | Perc. of Predicted: 0.7777777777777778 | Overall Perc: 0.7777777777777778
+-----
+Object: data/rgbdVideoFrames/coffee_mug/coffee_mug_1
+Scenes Present: 7
+Predict: 7 | Overall Perc: 1.0
+No Predict: 0 | Overall Perc: 0.0
+False Positives: 3 | Perc. of Predicted: 0.42857142857142855 | Overall Perc: 0.42857142857142855
+-----
+Object: data/rgbdVideoFrames/soda_can/soda_can_3
+Scenes Present: 10
+Predict: 10 | Overall Perc: 1.0
+No Predict: 0 | Overall Perc: 0.0
+False Positives: 4 | Perc. of Predicted: 0.4 | Overall Perc: 0.4
+-----
+Object: data/rgbdVideoFrames/flashlight/flashlight_5
+Scenes Present: 10
+Predict: 10 | Overall Perc: 1.0
+No Predict: 0 | Overall Perc: 0.0
+False Positives: 10 | Perc. of Predicted: 1.0 | Overall Perc: 1.0
+-----
+Object: data/rgbdVideoFrames/flashlight/flashlight_3
+Scenes Present: 6
+Predict: 6 | Overall Perc: 1.0
+No Predict: 0 | Overall Perc: 0.0
+False Positives: 6 | Perc. of Predicted: 1.0 | Overall Perc: 1.0
+-----
+Object: data/rgbdVideoFrames/flashlight/flashlight_1
+Scenes Present: 4
+Predict: 4 | Overall Perc: 1.0
+No Predict: 0 | Overall Perc: 0.0
+False Positives: 3 | Perc. of Predicted: 0.75 | Overall Perc: 0.75
+-----
+Object: data/rgbdVideoFrames/bowl/bowl_3
+Scenes Present: 8
+Predict: 8 | Overall Perc: 1.0
+No Predict: 0 | Overall Perc: 0.0
+False Positives: 7 | Perc. of Predicted: 0.875 | Overall Perc: 0.875
+-----
+Object: data/rgbdVideoFrames/soda_can/soda_can_4
+Scenes Present: 7
+Predict: 7 | Overall Perc: 1.0
+No Predict: 0 | Overall Perc: 0.0
+False Positives: 4 | Perc. of Predicted: 0.5714285714285714 | Overall Perc: 0.5714285714285714
+-----
+Object: data/rgbdVideoFrames/coffee_mug/coffee_mug_5
+Scenes Present: 11
+Predict: 11 | Overall Perc: 1.0
+No Predict: 0 | Overall Perc: 0.0
+False Positives: 8 | Perc. of Predicted: 0.7272727272727273 | Overall Perc: 0.7272727272727273
+-----
+Object: data/rgbdVideoFrames/soda_can/soda_can_6
+Scenes Present: 5
+Predict: 5 | Overall Perc: 1.0
+No Predict: 0 | Overall Perc: 0.0
+False Positives: 1 | Perc. of Predicted: 0.2 | Overall Perc: 0.2
+-----
+Object: data/rgbdVideoFrames/flashlight/flashlight_2
+Scenes Present: 8
+Predict: 8 | Overall Perc: 1.0
+No Predict: 0 | Overall Perc: 0.0
+False Positives: 5 | Perc. of Predicted: 0.625 | Overall Perc: 0.625
+-----
+Object: data/rgbdVideoFrames/bowl/bowl_2
+Scenes Present: 8
+Predict: 8 | Overall Perc: 1.0
+No Predict: 0 | Overall Perc: 0.0
+False Positives: 7 | Perc. of Predicted: 0.875 | Overall Perc: 0.875
+-----
+Object: data/rgbdVideoFrames/cap/cap_1
+Scenes Present: 11
+Predict: 11 | Overall Perc: 1.0
+No Predict: 0 | Overall Perc: 0.0
+False Positives: 6 | Perc. of Predicted: 0.5454545454545454 | Overall Perc: 0.5454545454545454
+-----
+Object: data/rgbdVideoFrames/cereal_box/cereal_box_2
+Scenes Present: 7
+Predict: 7 | Overall Perc: 1.0
+No Predict: 0 | Overall Perc: 0.0
+False Positives: 5 | Perc. of Predicted: 0.7142857142857143 | Overall Perc: 0.7142857142857143
+-----
+Object: data/rgbdVideoFrames/coffee_mug/coffee_mug_6
+Scenes Present: 2
+Predict: 2 | Overall Perc: 1.0
+No Predict: 0 | Overall Perc: 0.0
+False Positives: 1 | Perc. of Predicted: 0.5 | Overall Perc: 0.5
+-----
+Object: data/rgbdVideoFrames/cap/cap_3
+Scenes Present: 3
+Predict: 3 | Overall Perc: 1.0
+No Predict: 0 | Overall Perc: 0.0
+False Positives: 3 | Perc. of Predicted: 1.0 | Overall Perc: 1.0
+-----
+Object: data/rgbdVideoFrames/soda_can/soda_can_5
+Scenes Present: 2
+Predict: 2 | Overall Perc: 1.0
+No Predict: 0 | Overall Perc: 0.0
+False Positives: 1 | Perc. of Predicted: 0.5 | Overall Perc: 0.5
+-----
+Object: data/rgbdVideoFrames/coffee_mug/coffee_mug_4
+Scenes Present: 3
+Predict: 3 | Overall Perc: 1.0
+No Predict: 0 | Overall Perc: 0.0
+False Positives: 0 | Perc. of Predicted: 0.0 | Overall Perc: 0.0
+-----
+Total Object Presence: 183
+Overall Predicted: 183
+Overall Not Predicted: 0
+Overall False Positive: 123
