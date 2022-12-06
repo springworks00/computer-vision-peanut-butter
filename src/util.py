@@ -8,21 +8,39 @@ class Frame(NamedTuple):
     kps: np.ndarray = None
     dcs: np.ndarray = None
 
-def capture(path: str) -> Iterable[Frame]:
+def status(msg):
+    print(f"\r{msg}", end="", flush=True)
+
+def capture(path: str) -> np.ndarray:
     cap = cv2.VideoCapture(path)
     if not cap.isOpened():
         raise FileNotFoundError(path)
     cap_len = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
 
-    def gen():
-        while cap.isOpened():
-            ok, raw = cap.read()
-            if not ok:
-                break
-            yield Frame(raw=raw)
+    frames = []
+    i = 1
+    while cap.isOpened():
+        ok, raw = cap.read()
+        if not ok:
+            break
+        frames.append(Frame(raw=raw))
+        status(f"\r({path}) reading frames: {100*i//cap_len}%")
+        i += 1
+    print()
+    return frames
 
-    return gen(), cap_len
-
+def error_frame(shape):
+    black = np.zeros(shape=shape, dtype=np.uint8)
+    black = cv2.putText(
+            black, 
+            "OBJECT NOT FOUND",
+            (100, 100),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            2,
+            (0, 0, 255),
+            3,
+            cv2.LINE_AA)
+    return Frame(raw=black)
 
 def show(frame: Frame, kps=False, scale=1, title="untitled"):
     raw = frame.raw

@@ -1,5 +1,6 @@
 import cv2
 import numpy as np
+import util
 from util import Frame
 from typing import Iterable
 from typing import List
@@ -8,11 +9,18 @@ import matplotlib.pyplot as plt
 from sklearn.cluster import KMeans
 from sklearn.metrics import pairwise_distances_argmin_min
 
-def orb_features(fs: Iterable[Frame], n=200) -> Iterable[Frame]:
+def orb_features(fs: List[Frame], n=500) -> List[Frame]:
     orb = cv2.ORB_create(nfeatures=n)
+    fs_len = len(fs)
+    results = []
+    i = 1
     for f in fs:
         kps, dcs = orb.detectAndCompute(f.raw, None)
-        yield Frame(raw=f.raw, kps=kps, dcs=dcs)
+        results.append(Frame(raw=f.raw, kps=kps, dcs=dcs))
+        util.status(f"analyzing orb features: {100*(i*n)//(fs_len*n)}%")
+        i += 1
+    print()
+    return results
 
 def __match(query: Frame, train: Frame, threshold):
     matches = cv2.BFMatcher().knnMatch(query.dcs, train.dcs, k=2)
@@ -50,7 +58,7 @@ def __acc_match(query: np.ndarray, train: np.ndarray):
 
     return good, train
 
-def cluster(frames: List[Frame], k) -> Iterable[Frame]:
+def cluster(frames: List[Frame], k) -> List[Frame]:
     dcss = list(map(lambda x: x.dcs, frames))
 
     xs, ys = [], []
@@ -63,11 +71,12 @@ def cluster(frames: List[Frame], k) -> Iterable[Frame]:
         
         ys += this_ys
         xs += this_xs
-        print(f"\raccumulating: {frameIdx}/{len_dcss}", end="", flush=True)
-    print("\nclustering")
-
+        util.status(f"building cluster set: {100*(frameIdx+1)//len_dcss}%")
+    print()
+    util.status(f"clustering to {k} frames: ") 
     points = np.array(list(zip(xs, ys)))
     kmeans = KMeans(n_clusters=k, random_state=1)
     kmeans.fit(points)
     best_indexes = pairwise_distances_argmin_min(kmeans.cluster_centers_, points)[0]
-    return map(lambda i: frames[i], points[best_indexes, 0])
+    print("100%")
+    return list(map(lambda i: frames[i], points[best_indexes, 0]))

@@ -1,38 +1,38 @@
 import analyze
 import util
+import numpy as np
+import cv2
 
-def scan_pipeline():
-    scan, _ = util.capture("scan.mp4")
+def load_scan(path):
+    print("__ LOADING SCAN __")
+    scan = util.capture(path)
 
-    print("cluster scan to k orientations")
-    scan = analyze.orb_features(scan, n=20)
-    scan = analyze.cluster(list(scan), k=20)
+    scan = analyze.orb_features(scan, n=100)
 
-    print("re-analyze scan with more features")
-    scan = analyze.orb_features(scan, n=200)
+    scan = analyze.cluster(scan, k=17)
 
-    return scan
+    return analyze.orb_features(scan, n=200)
 
-env_path = "strafe_left.qt"
-#env_path = "env.mp4"
-env = analyze.orb_features(util.capture(env_path)[0], n=100)
 
-scan = list(scan_pipeline())
+def load_env(path):
+    print("__ LOADING ENV __")
+    env = util.capture(path)
+    
+    return analyze.orb_features(env, n=100)
 
-similar = scan[0]
-fail = 0
+scan = load_scan("scan.mp4")
+env = load_env("strafe_left.qt")
+
 for i, e in enumerate(env):
     if i % 30 == 0:
-        tmp = analyze.most_similar(
+        similar = analyze.most_similar(
                 e, scan, confidence_floor=0.1, threshold=0.75)
-        if tmp is None:
-            fail += 1
-            print(f"\robject not present count: {fail}", end="", flush=True)
-        else:
-            similar = tmp
+        if similar is None:
+            similar = util.error_frame(e.raw.shape)
 
     util.show(e, scale=0.3, title="env", kps=True)
     util.show(similar, scale=0.3, title="guess", kps=True)
 
     if util.key_pressed("q", wait=False):
         break
+
