@@ -45,7 +45,7 @@ if __name__ == '__main__':
     #     camera_device = int(camera_device)
 
     detectAndDisplay(cv.imread(camera_device), cascade_classifier)
-    cv.waitKey(5000)
+    cv.waitKey(0)
 
     exit(0)
     

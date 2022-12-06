@@ -35,7 +35,7 @@ if __name__ == '__main__':
                                                 The example file can be downloaded from: \
                                                 https://www.bogotobogo.com/python/OpenCV_Python/images/mean_shift_tracking/slow_traffic_small.mp4')
     parser.add_argument('image', type=str, help='path to image file')
-    parser.add_argument('--centroid_f',type=float, help='blending weight for how quickly the bounding box should adjust to new centroid of features', default=0.3)
+    parser.add_argument('--centroid_f',type=float, help='blending weight for how quickly the bounding box should adjust to new centroid of features', default=0.1)
     parser.add_argument('--tgtbb_f', type=float, default=0.1)
     parser.add_argument('--prefix', default='')
     parser.add_argument('--output_images', help='optional directory to output image files from video.\
@@ -85,10 +85,11 @@ if __name__ == '__main__':
     color = np.random.randint(0, 255, (N_TRACKED_CORNERS, 3))
     # Take first frame and find corners in it
     ret, old_frame = cap.read()
-    old_gray = cv.medianBlur(old_frame, 5)
-    old_gray = cv.cvtColor(old_gray, cv.COLOR_BGR2GRAY)
+    # old_gray = cv.medianBlur(old_frame, 5)
+    old_gray = cv.cvtColor(old_frame, cv.COLOR_BGR2GRAY)
     p0 = cv.goodFeaturesToTrack(old_gray, mask = None, **feature_params)
     bb = np.array(cv.boundingRect(p0))
+    old_vel = np.array([0, 0])
 
     annotations = []
 
@@ -100,13 +101,13 @@ if __name__ == '__main__':
         if not ret:
             print('No frames grabbed!')
             break
-        frame_gray = cv.medianBlur(frame, 5)
-        frame_gray = cv.cvtColor(frame_gray, cv.COLOR_BGR2GRAY)
+        # frame_gray = cv.medianBlur(frame, 5)
+        frame_gray = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
 
 
         # calculate centroid
-        centroid = np.mean(p0, axis=0)[0]
-        # centroid = np.median(p0, axis=0)[0]
+        # centroid = np.mean(p0, axis=0)[0]
+        centroid = np.median(p0, axis=0)[0]
 
         std = np.std(p0, axis=0)[0]
 
@@ -127,6 +128,13 @@ if __name__ == '__main__':
                 good = np.stack(good, axis=0)
                 p0 = np.concatenate([p0, good], axis=0)
         
+        # p0_new = []
+        # for p in p0:
+        #     tpoint = p.ravel()
+        #     if test_point(bb, tpoint) or np.linalg.norm(p - centroid) < 3 * np.linalg.norm(std):
+        #         p0_new.append(p)
+        # p0 = np.stack(p0_new, axis=0)
+        
         # calculate optical flow of tracked points
         p1, st, err = cv.calcOpticalFlowPyrLK(old_gray, frame_gray, p0, None, **lk_params)
         # Select good points
@@ -136,6 +144,8 @@ if __name__ == '__main__':
 
         vel = good_new - good_old
         avg_vel = np.mean(vel, axis=0)
+        # avg_vel = 0.7*avg_vel + 0.3*old_vel
+        # old_vel = avg_vel
 
         # adjust center of bounding box towards feature point cluster
         bb[:2] = bb[:2] + avg_vel
@@ -148,27 +158,43 @@ if __name__ == '__main__':
         # adjust bounding box size towards box enclosing all good points
         bb_target = np.array(cv.boundingRect(good_new))
 
-        bb[2:] = (1-args.tgtbb_f) * bb[2:] + args.tgtbb_f * (1.1 * bb_target[2:])
+        bb[2:] = (1-args.tgtbb_f) * bb[2:] + args.tgtbb_f * (bb_target[2:] + np.abs(dc_xy))
 
         print('std: %s centroid: %s avg_vel: %s' % (std, centroid, avg_vel))
 
         h,w = frame.shape[:2]
         bb_cl = clip_bb(bb, (w,h))
 
-        # flow = cv.calcOpticalFlowFarneback(old_gray, frame_gray, None, 0.5, 3, 15, 3, 5, 1.2, 0)
+        # flow = cv.calcOpticalFlowFarneback(cv.medianBlur(old_gray, 7), cv.medianBlur(frame_gray, 7), None, 0.5, 3, 15, 3, 5, 1.2, 0)
 
-        # flow = flow[bb_cl[1]:bb_cl[1]+bb_cl[3], bb_cl[0]:bb_cl[0]+bb_cl[2]]
-        # # flow = flow - np.mean(flow, axis=(0,1))
+        # flow_window = flow[bb_cl[1]:bb_cl[1]+bb_cl[3], bb_cl[0]:bb_cl[0]+bb_cl[2]]
+        # flow = flow - np.mean(flow_window, axis=(0,1))
+
+        # mean = np.empty((0))
+        # flow_pts = np.reshape(flow_window, (-1, 2))
+        # print(flow_pts)
+        # mean, eigenvectors, eigenvalues = cv.PCACompute2(flow_pts, mean)
+
+        # fdot = np.zeros((*flow.shape[:2], 3), dtype=np.uint8)
+        # fdot[..., 0] = np.sum(flow * (eigenvectors[0] * np.ones_like(flow)), axis=-1)
+        # fdot[..., 1] = np.sum(flow * (eigenvectors[1] * np.ones_like(flow)), axis=-1)
+
+        # print(flow.shape)
+
+        # cv.imshow('frame2', fdot)
 
         # hsv = np.zeros((*flow.shape[:2], 3), dtype=np.uint8)
-        # print(hsv.shape)
         # hsv[..., 1] = 255
         # mag, ang = cv.cartToPolar(flow[..., 0], flow[..., 1])
+        # _, ang = cv.threshold(ang, np.mean(ang, axis=(0,1)), 2*np.pi, type=cv.THRESH_BINARY_INV)
+        # _, mag = cv.threshold(mag, np.mean(mag, axis=(0,1)), np.max(mag), type=cv.THRESH_BINARY_INV)
         # if not ang is None:
         #     hsv[..., 0] = ang*180/np.pi/2
         #     hsv[..., 2] = cv.normalize(mag, None, 0, 255, cv.NORM_MINMAX)
         #     bgr = cv.cvtColor(hsv, cv.COLOR_HSV2BGR)
         #     cv.imshow('frame2', bgr)
+
+        # cv.imshow('frame2', cv.medianBlur(frame_gray, 7) - cv.medianBlur(old_gray, 7))
 
         # save frame before we draw all over it
         img_ann_path = ''
