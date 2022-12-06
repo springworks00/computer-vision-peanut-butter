@@ -10,5 +10,5 @@ Run `./tools/setup_venv.sh` to install requirements and generate a virtual envir
 
 ## Scanning stage
 
-![alt](report_screenshots/object_tracking/tracker_output_withc.png)
+![alt](report_screenshots/object_tracking/tracker_output_final.png)
 
