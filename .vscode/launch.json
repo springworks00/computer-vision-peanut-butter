@@ -5,6 +5,15 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "Python: Current File",
+            "type": "python",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "args": ["--video", "data/remote/remote_video.MOV", "--feature_frames", "5", "--frame_skip", "15", "--image", "data/remote/remove_img_1.jpg"],
+            "justMyCode": true
+        },
+        {
             "name": "Python: Launch Feature Builder",
             "type": "python",
             "request": "launch",
