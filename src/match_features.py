@@ -3,6 +3,15 @@ import cv2
 import numpy as np
 import argparse
 import copy
+import build_feature_set
+import random
+import sys
+import math
+
+def get_frame_features(sift, frame):
+    frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    frame_kp, frame_des = sift.detectAndCompute(frame, None)
+    return frame_kp, frame_des
 
 # video_path: path to video file
 # calc_fps: how many frames per second to calculate features
@@ -26,7 +35,6 @@ def calculate_video_features(video_path, calc_fps=2):
 
         if ret == True:
             if frame_count == calc_every_n_frames:
-
                 frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
                 frame_kp, frame_des = video_sift.detectAndCompute(frame, None)
                 show_img = cv2.drawKeypoints(frame, frame_kp, None, color=(0,255,0), flags=cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
@@ -139,11 +147,14 @@ def compute_possible_homographies(video_features, img, img_kp, img_des, ratio_te
     cv2.imshow('Best Homography', show_img)
     cv2.waitKey() & 0xFF == ord('q')
 
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--feature_json', default="features.json")
     parser.add_argument('--video', required=True)
     parser.add_argument('--image', required=True)
+    parser.add_argument('--feature_frames', default=4, type=int)
+    parser.add_argument('--frame_skip', default=30, type=int)
     args = parser.parse_args()
 
     print(f"OpenCV Version: {cv2.__version__}")
@@ -151,18 +162,53 @@ if __name__ == "__main__":
     video_path = args.video
     img_path = args.image
 
+    # -------
+
     # TODO: Implement multiprocessing to speed things up a ton
 
     # NOTE: DO WE NEED TO CONVERT TO GRAYSCALE FOR ORB FEATURES TO WORK?
 
     # STEP 1: Compile set of "quality" features from the video
         # - Default ORB parameters for video should be good (oriented at center of image, fast)
-    video_features = calculate_video_features(video_path) # video_features [(frame, frame_kp, frame_des), ...]
+    # video_features = calculate_video_features(video_path) # video_features [(frame, frame_kp, frame_des), ...]
 
-    # STEP 2: Get features of the image
-    img, img_kp, img_des = calculate_img_features(img_path)
+    # INTEGRATION
+    # cap = cv2.VideoCapture(args.video)
 
-    # STEP 3: Calculate the homographies present across all frames and the image
-    poss_homographies = compute_possible_homographies(video_features, img, img_kp, img_des)
+    # FLANN_INDEX_KDTREE = 0
+    # flann_params = dict(algorithm = FLANN_INDEX_KDTREE,
+    #                     trees = 4)
+
+    # flann_matcher = cv2.FlannBasedMatcher(flann_params)
+
+    # sift = cv2.SIFT_create()
+
+    # fextractor = build_feature_set.FeatureExtractor(args.feature_frames, cv2.BFMatcher_create(), sift)
+
+    # cv2.namedWindow('tracked', flags=cv2.WINDOW_NORMAL | cv2.WINDOW_KEEPRATIO)
+    # cv2.resizeWindow('tracked', 500, 500)
+
+    # frame_id = 0
+    # stop = False
+    # while cap.isOpened() and not stop:
+    #     ret, frame = cap.read()
+    #     if not ret:
+    #         break
+    #     if (frame_id % args.frame_skip) == 0:
+    #         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    #         fextractor.add_feature_frame(frame)
+
+    #     frame_id += 1
+
+    # fextractor.reduce_features()
+    # video_features = [(video_feature_obj.frame, video_feature_obj.keypoints, video_feature_obj.descriptors) for video_feature_obj in fextractor.feature_collection]
+
+    # -------
+
+    # # STEP 2: Get features of the image
+    # img, img_kp, img_des = calculate_img_features(img_path)
+
+    # # STEP 3: Calculate the homographies present across all frames and the image
+    # poss_homographies = compute_possible_homographies(video_features, img, img_kp, img_des)
 
     # STEP 4: Find the homography with the lowest reprojection error

@@ -1,3 +1,6 @@
+# Script for validation against RGB-D dataset, contains both the template matching algorithm
+# and best fit homography algorithm
+
 import os
 import cv2
 import scipy.io
@@ -146,12 +149,67 @@ def run_outside_data(query_img_path, video_path):
     #         break
     pass
 
+def compute_homography(sift, bf, query_img, query_kp, query_des, frame):
+    draw_img = query_img.copy()
+    frame = resize_with_pad(frame, (250, 250))
 
+    frame_kp, frame_des = sift.detectAndCompute(frame, None)
+    good_matches = match_descriptors(bf, frame_des, query_des, ratio_test=0.75, k=2)
+
+    M_err = None
+    M = None
+    if len(good_matches) > 10:
+        src_pts = np.float32([ frame_kp[m.queryIdx].pt for m in good_matches ]).reshape(-1,1,2)
+        dst_pts = np.float32([ query_kp[m.trainIdx].pt for m in good_matches ]).reshape(-1,1,2)
+        M, mask = cv2.findHomography(src_pts, dst_pts, cv2.RANSAC)
+        matchesMask = mask.ravel().tolist()
+
+        if M is not None:
+            h,w = frame.shape
+            pts = np.float32([ [0,0],[0,h-1],[w-1,h-1],[w-1,0] ]).reshape(-1,1,2)
+            dst = cv2.perspectiveTransform(pts,M)
+            draw_img = cv2.polylines(draw_img,[np.int32(dst)],True,255,3, cv2.LINE_AA)
+
+            M_err = homography_reprojection_err(M, src_pts, dst_pts)
+            # possible_homographies.append((M_err, M, good_matches, matchesMask, obj_frame, obj_kp, obj_des))
+        else:
+            matchesMask = None
+    else:
+        matchesMask = None
+
+    draw_params = dict(matchColor = (0,255,0), # draw matches in green color
+    singlePointColor = None,
+    matchesMask = matchesMask, # draw only inliers
+    flags = 2)
+
+    draw_img = cv2.drawMatches(frame, frame_kp, draw_img, query_kp, good_matches, None,**draw_params)
+
+    cv2.imshow('Matches', draw_img)
+    cv2.waitKey(10)
+
+    return M_err, M, good_matches, matchesMask, frame, frame_kp, frame_des
+
+def find_best_homography(possible_homographies):
+    sorted_homographes = sorted(possible_homographies, key=lambda x: (len(x[2]) * -1, x[0]))
+    M_best_err, M_best, M_best_matches, M_best_matches_mask, M_best_frame, M_best_frame_kp, M_best_frame_des =  sorted_homographes[0]
+
+    h,w = M_best_frame.shape
+    pts = np.float32([ [0,0],[0,h-1],[w-1,h-1],[w-1,0] ]).reshape(-1,1,2)
+    dst = cv2.perspectiveTransform(pts,M_best)
+
+    flattened = [x[0] for x in dst]
+    x, y = [a[0] for a in flattened], [a[1] for a in flattened]
+    bot_left, top_right = (int(np.min(x)), int(np.max(y))), (int(np.max(x)), int(np.min(y)))
+    width, height = abs(top_right[0] - bot_left[0]), abs(bot_left[1] - top_right[1])
+    center = (bot_left[0] + int(width/2), top_right[1] + int(height/2))
+
+    return center, bot_left, top_right, M_best_frame, M_best_matches, M_best_matches_mask, M_best_frame_kp
+
+
+# Runs evaluation on RGB-D Dataset
 if __name__ == "__main__":
+    ALGO = "homography"
 
-    # run_outside_data("data/remote/remote_img_1.jpg", "data/remote/remote_video.MOV")
-
-    # EVALUATION SECTION ON RGBD DATASET ----
     scene_labels = get_query_scenes()
     num_scenes = len(scene_labels)
     print(num_scenes)
@@ -166,7 +224,7 @@ if __name__ == "__main__":
 
         query_img = cv2.imread(scene_path)
         query_img = cv2.cvtColor(query_img, cv2.COLOR_BGR2GRAY)
-        query_kp, query_des = sift.detectAndCompute(query_img, None)
+        query_kp, query_des = sift.detectAndCompute(query_img, None) # TODO: Uncomment this
 
         for obj_path, obj_rect in obj_info:
             # Processing Frames of Specific Object
@@ -177,87 +235,79 @@ if __name__ == "__main__":
             obj_rect_w, obj_rect_h = obj_rect_top_right[0] - obj_rect_bot_left[0], obj_rect_bot_left[1] - obj_rect_top_right[1]
             obj_rect_true_center = [(obj_rect_bot_left[0] + int(obj_rect_w/2)), (obj_rect_top_right[1] + int(obj_rect_h/2))] # x, y
 
-            possible_homographies = []
-            query_img_copy = query_img.copy()
-            for obj_frame_path in obj_frame_paths:
-                draw_img = query_img.copy()
-
-                # For each frame of a specific object
-                obj_frame = cv2.imread(obj_frame_path, cv2.IMREAD_GRAYSCALE) 
-                obj_frame = resize_with_pad(obj_frame, (250, 250))
+            if ALGO == "homography":
+                possible_homographies = []
+                for obj_frame_path in obj_frame_paths:
+                    # For each frame of a specific object
+                    obj_frame = cv2.imread(obj_frame_path, cv2.IMREAD_GRAYSCALE)
+                    homography_info = compute_homography(sift, bf, query_img, query_kp, query_des, obj_frame)
+                    if homography_info[0] is not None:
+                        possible_homographies.append(homography_info)
                 
-                obj_kp, obj_des = sift.detectAndCompute(obj_frame, None)
+                # There was an object detection
+                if len(possible_homographies) > 0:
+                    center, bot_left, top_right, M_best_frame, M_best_matches, M_best_matches_mask, M_best_frame_kp = find_best_homography(possible_homographies)
+                    dist_from_true = math.dist(center, obj_rect_true_center)
 
-                good_matches = match_descriptors(bf, obj_des, query_des, ratio_test=0.75, k=2)
+                    img_w_bound_box = cv2.rectangle(query_img.copy(), bot_left, top_right, (255, 255, 255), 1, cv2.LINE_AA)
+                    img_w_bound_box = cv2.circle(img_w_bound_box, center, 5, (255, 255, 255), -1)
+                    img_w_bound_box = cv2.circle(img_w_bound_box, obj_rect_true_center, 5, (0, 0, 0), -1)
 
-                if len(good_matches) > 10:
-                    src_pts = np.float32([ obj_kp[m.queryIdx].pt for m in good_matches ]).reshape(-1,1,2)
-                    dst_pts = np.float32([ query_kp[m.trainIdx].pt for m in good_matches ]).reshape(-1,1,2)
-                    M, mask = cv2.findHomography(src_pts, dst_pts, cv2.RANSAC)
-                    matchesMask = mask.ravel().tolist()
+                    draw_params = dict(matchColor = (0,255,0), # draw matches in green color
+                        singlePointColor = None,
+                        matchesMask = M_best_matches_mask, # draw only inliers
+                        flags = 2)
+                    show_img = cv2.drawMatches(M_best_frame, M_best_frame_kp, img_w_bound_box, query_kp, M_best_matches, None, **draw_params)
+                    cv2.imshow('Matches', show_img)
+                    cv2.waitKey() & 0xFF == ord('q')
 
-                    if M is not None:
-                        h,w = obj_frame.shape
-                        pts = np.float32([ [0,0],[0,h-1],[w-1,h-1],[w-1,0] ]).reshape(-1,1,2)
-                        dst = cv2.perspectiveTransform(pts,M)
-                        draw_img = cv2.polylines(draw_img,[np.int32(dst)],True,255,3, cv2.LINE_AA)
-
-                        M_err = homography_reprojection_err(M, src_pts, dst_pts)
-                        possible_homographies.append((M_err, M, good_matches, matchesMask, obj_frame, obj_kp, obj_des))
+                    if obj_path in obj_stats:
+                        obj_stats[obj_path]["correct"].append(dist_from_true)
                     else:
-                        matchesMask = None
+                        obj_stats[obj_path] = {"correct": [dist_from_true], "incorrect": 0}
                 else:
-                    matchesMask = None
+                    # No object detected
+                    if obj_path in obj_stats:
+                        obj_stats[obj_path]["incorrect"] += 1
+                    else:
+                        obj_stats[obj_path] = {"correct": [], "incorrect": 1}
+                print(obj_stats)
+            elif ALGO == "template":
+                found = None
+                for obj_frame_path in obj_frame_paths:
+                    # For each frame of a specific object
+                    obj_frame = cv2.imread(obj_frame_path, cv2.IMREAD_GRAYSCALE)
+                    obj_frame = resize_with_pad(obj_frame, (100, 100))
+                    obj_frame = cv2.Canny(obj_frame, 50, 200)
+                    tH, tW = obj_frame.shape[:2]
 
-                draw_params = dict(matchColor = (0,255,0), # draw matches in green color
-                   singlePointColor = None,
-                   matchesMask = matchesMask, # draw only inliers
-                   flags = 2)
+                    query_edge = cv2.Canny(query_img.copy(), 50, 200)
 
-                draw_img = cv2.drawMatches(obj_frame, obj_kp, draw_img, query_kp, good_matches, None,**draw_params)
+                    result = cv2.matchTemplate(query_edge, obj_frame, cv2.TM_CCOEFF)
+                    (_, maxVal, _, maxLoc) = cv2.minMaxLoc(result)
 
-                cv2.imshow('Matches', draw_img)
-                cv2.waitKey(10)
-            
-            # There was an object detection
-            if len(possible_homographies) > 0:
-                sorted_homographes = sorted(possible_homographies, key=lambda x: (len(x[2]) * -1, x[0]))
-                M_best_err, M_best, M_best_matches, M_best_matches_mask, M_best_frame, M_best_frame_kp, M_best_frame_des =  sorted_homographes[0]
+                    out = cv2.rectangle(query_img.copy(), (maxLoc[0], maxLoc[1]), (maxLoc[0] + tW, maxLoc[1] + tH), (255, 255, 255), 2)
 
-                h,w = M_best_frame.shape
-                pts = np.float32([ [0,0],[0,h-1],[w-1,h-1],[w-1,0] ]).reshape(-1,1,2)
-                dst = cv2.perspectiveTransform(pts,M_best)
+                    if found is None or maxVal > found[0]:
+                        found = (maxVal, maxLoc, obj_frame)
 
-                test = [x[0] for x in dst]
-                x, y = [a[0] for a in test], [a[1] for a in test]
-                bot_left, top_right = (int(np.min(x)), int(np.max(y))), (int(np.max(x)), int(np.min(y)))
-                width, height = abs(top_right[0] - bot_left[0]), abs(bot_left[1] - top_right[1])
-                center = (bot_left[0] + int(width/2), top_right[1] + int(height/2))
+                    cv2.imshow('Test', obj_frame)
+                    cv2.imshow('Query', out)
+                    if cv2.waitKey(10) & 0xFF == ord('q'):
+                        break
+                found_loc = found[1]
+                found_h, found_w = found[2].shape[0], found[2].shape[1]
+                found_center = abs(int(found_loc[0] + (found_w/2))), abs(int(found_loc[1] + (found_h/2)))
+                dist_from_true = math.dist(found_center, obj_rect_true_center)
 
-                dist_from_true = math.dist(center, obj_rect_true_center)
-
-                img_w_bound_box = cv2.rectangle(query_img.copy(), bot_left, top_right, (255, 255, 255), 1, cv2.LINE_AA)
-                img_w_bound_box = cv2.circle(img_w_bound_box, center, 5, (255, 255, 255), -1)
-                img_w_bound_box = cv2.circle(img_w_bound_box, obj_rect_true_center, 5, (0, 0, 0), -1)
-
-                draw_params = dict(matchColor = (0,255,0), # draw matches in green color
-                    singlePointColor = None,
-                    matchesMask = M_best_matches_mask, # draw only inliers
-                    flags = 2)
-                show_img = cv2.drawMatches(M_best_frame, M_best_frame_kp, img_w_bound_box, query_kp, M_best_matches, None, **draw_params)
-                cv2.imshow('Matches', show_img)
-                cv2.waitKey() & 0xFF == ord('q')
+                # out = cv2.rectangle(query_img.copy(), (found_loc[0], found_loc[1]), (found_loc[0] + found_w, found_loc[1] + found_h) ,(255, 255, 255), 2)
+                # cv2.imshow('Test', found[2])
+                # cv2.imshow('Query', out)
+                # cv2.waitKey() & 0xFF == ord('q')
 
                 if obj_path in obj_stats:
                     obj_stats[obj_path]["correct"].append(dist_from_true)
                 else:
                     obj_stats[obj_path] = {"correct": [dist_from_true], "incorrect": 0}
-            else:
-                # No object detected
-                if obj_path in obj_stats:
-                    obj_stats[obj_path]["incorrect"] += 1
-                else:
-                    obj_stats[obj_path] = {"correct": [], "incorrect": 1}
-            print(obj_stats)
-    
+                print(obj_stats)
     output_stats(obj_stats)
