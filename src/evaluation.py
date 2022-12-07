@@ -6,7 +6,6 @@ import cv2
 import scipy.io
 import numpy as np
 import pandas as pd
-import match_features
 import tensorflow
 import math
 import imutils
@@ -14,6 +13,7 @@ import optical_flow
 
 FRAMES_PATH = "data/rgbdVideoFrames"
 SCENES_PATH = "data/rgbdScenes"
+ALGO = "homography" # either "homography" or "template"
 
 # gets frames paths (in order) of an object
 # Ex: object_path = 'data/rgbdVideoFrames/apple/apple_1
@@ -208,8 +208,6 @@ def find_best_homography(possible_homographies):
 
 # Runs evaluation on RGB-D Dataset
 if __name__ == "__main__":
-    ALGO = "homography"
-
     scene_labels = get_query_scenes()
     num_scenes = len(scene_labels)
     print(num_scenes)
