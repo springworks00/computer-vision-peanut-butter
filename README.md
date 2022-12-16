@@ -1,6 +1,6 @@
 # Object Localization without a CNN
 
-Attempts to identify and localize a never-seen-before object without training or pre-training a Convolutional Neural Network.
+Attempts to identify+localize a never-seen-before object without training or pre-training a Convolutional Neural Network.
 
 **INPUT:** 
 1. A video scan of the object
