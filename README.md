@@ -1,4 +1,4 @@
-# Object Localization without a CNN
+# Zero-Knowledge Vision
 
 Attempts to identify+localize a never-seen-before object without training or pre-training a Convolutional Neural Network.
 
